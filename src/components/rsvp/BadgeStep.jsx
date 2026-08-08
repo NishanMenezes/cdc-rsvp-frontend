@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Download, Share2 } from 'lucide-react';
+import { Download, Share2, ExternalLink } from 'lucide-react';
 
 export default function BadgeStep({ formData, inviteId }) {
   const [imageUrl, setImageUrl] = useState(null);
@@ -28,7 +28,11 @@ export default function BadgeStep({ formData, inviteId }) {
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(40, 40, 420, 420);
         ctx.drawImage(img, 60, 60, 380, 380);
-        resolve(canvas.toDataURL('image/png'));
+
+        canvas.toBlob((blob) => {
+          const blobUrl = URL.createObjectURL(blob);
+          resolve(blobUrl);
+        }, 'image/png');
       };
 
       img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
@@ -37,17 +41,17 @@ export default function BadgeStep({ formData, inviteId }) {
 
   const handleShowSaveImage = async () => {
     setGenerating(true);
-    const dataUrl = await generateImage();
-    setImageUrl(dataUrl);
+    const blobUrl = await generateImage();
+    setImageUrl(blobUrl);
     setGenerating(false);
   };
 
   const handleShare = async () => {
-    const dataUrl = imageUrl || (await generateImage());
-    if (!imageUrl) setImageUrl(dataUrl);
-
     try {
-      const blob = await (await fetch(dataUrl)).blob();
+      const blobUrl = imageUrl || (await generateImage());
+      if (!imageUrl) setImageUrl(blobUrl);
+
+      const blob = await (await fetch(blobUrl)).blob();
       const file = new File([blob], `${inviteId}-badge.png`, { type: 'image/png' });
 
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
@@ -55,12 +59,14 @@ export default function BadgeStep({ formData, inviteId }) {
           files: [file],
           title: 'Mumbai CDC 2026 Badge',
         });
-      } else {
-        setImageUrl(dataUrl);
       }
     } catch (err) {
-      setImageUrl(dataUrl);
+      // Share not supported or cancelled — image is already shown for manual save
     }
+  };
+
+  const handleOpenInBrowser = () => {
+    window.open(window.location.href, '_blank');
   };
 
   return (
@@ -82,7 +88,7 @@ export default function BadgeStep({ formData, inviteId }) {
         </div>
       )}
 
-      <div className="flex gap-3">
+      <div className="flex gap-3 mb-3">
         <button
           onClick={handleShowSaveImage}
           disabled={generating}
@@ -99,6 +105,14 @@ export default function BadgeStep({ formData, inviteId }) {
           Share Badge
         </button>
       </div>
+
+      <button
+        onClick={handleOpenInBrowser}
+        className="w-full flex items-center justify-center gap-2 text-sm text-indigo-400 hover:text-indigo-300 py-2"
+      >
+        <ExternalLink className="w-3.5 h-3.5" />
+        Having trouble saving? Open in browser
+      </button>
 
       <p className="text-slate-500 text-xs mt-4">Show this QR code at the event entrance.</p>
     </div>
