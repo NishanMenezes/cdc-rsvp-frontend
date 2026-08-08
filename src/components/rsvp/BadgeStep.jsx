@@ -65,10 +65,6 @@ export default function BadgeStep({ formData, inviteId }) {
     }
   };
 
-  const handleOpenInBrowser = () => {
-    window.open(window.location.href, '_blank');
-  };
-
   return (
     <div className="text-center py-4">
       <div className="bg-gradient-to-br from-indigo-600 to-slate-900 rounded-2xl p-6 mb-6">
@@ -106,13 +102,15 @@ export default function BadgeStep({ formData, inviteId }) {
         </button>
       </div>
 
-      <button
-        onClick={handleOpenInBrowser}
+      
+       <a href={typeof window !== 'undefined' ? window.location.href : '#'}
+        target="_blank"
+        rel="noopener noreferrer"
         className="w-full flex items-center justify-center gap-2 text-sm text-indigo-400 hover:text-indigo-300 py-2"
       >
         <ExternalLink className="w-3.5 h-3.5" />
         Having trouble saving? Open in browser
-      </button>
+      </a>
 
       <p className="text-slate-500 text-xs mt-4">Show this QR code at the event entrance.</p>
     </div>
