@@ -19,13 +19,14 @@ export default function RSVPForm() {
   const [deadlinePassed, setDeadlinePassed] = useState(false);
   const [deadline, setDeadline] = useState(null);
 
-  const [step, setStep] = useState('confirm'); // confirm | otp | personal | professional | review | badge | declined
+  const [step, setStep] = useState('confirm'); // confirm | otp | personal | professional | review | badge | declined | pending
   const [stepLoading, setStepLoading] = useState(false);
   const [stepError, setStepError] = useState('');
 
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', email: '', mobile: '', company: '', designation: '',
   });
+  const [originalData, setOriginalData] = useState(null);
 
   const fetchAttendee = useCallback(async () => {
     setLoading(true);
@@ -45,17 +46,20 @@ export default function RSVPForm() {
       setDeadline(json.deadline);
 
       const [firstName, ...rest] = json.data.name.split(' ');
-      setFormData({
+      const prefilled = {
         firstName: firstName || '',
         lastName: rest.join(' ') || '',
         email: json.data.email,
         mobile: json.data.mobile,
         company: json.data.company,
         designation: json.data.designation,
-      });
+      };
+      setFormData(prefilled);
+      setOriginalData(prefilled);
 
       if (json.data.status === 'Confirmed') setStep('badge');
       if (json.data.status === 'Declined') setStep('declined');
+      if (json.data.status === 'Pending Verification') setStep('pending');
     } catch (err) {
       setLoadError('Network error. Please check your connection and try again.');
     } finally {
@@ -143,13 +147,19 @@ export default function RSVPForm() {
   const handleFinalSubmit = async () => {
     setStepLoading(true);
     setStepError('');
+
+    const hasChanges = originalData && (
+      formData.company !== originalData.company ||
+      formData.designation !== originalData.designation
+    );
+
     try {
       const res = await fetch(`${API_BASE}/rsvp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           inviteId,
-          mode: 'confirm',
+          mode: hasChanges ? 'update' : 'confirm',
           name: `${formData.firstName} ${formData.lastName}`,
           email: formData.email,
           mobile: formData.mobile,
@@ -162,7 +172,7 @@ export default function RSVPForm() {
         setStepError(json.message || 'Submission failed.');
         return;
       }
-      setStep('badge');
+      setStep(hasChanges ? 'pending' : 'badge');
     } catch (err) {
       setStepError('Network error. Please try again.');
     } finally {
@@ -227,6 +237,17 @@ export default function RSVPForm() {
               <Clock className="w-12 h-12 text-slate-500 mx-auto mb-4" />
               <h2 className="text-lg font-semibold mb-2">Response Recorded</h2>
               <p className="text-slate-400">We're sorry you can't make it. Thank you for letting us know.</p>
+            </div>
+          )}
+
+          {step === 'pending' && (
+            <div className="text-center py-6">
+              <Clock className="w-12 h-12 text-amber-400 mx-auto mb-4" />
+              <h2 className="text-lg font-semibold mb-2">Submitted for Review</h2>
+              <p className="text-slate-400">
+                Since you updated your company or designation details, our team will verify this
+                before your badge is issued. You'll be notified once it's confirmed.
+              </p>
             </div>
           )}
 
