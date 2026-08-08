@@ -103,14 +103,10 @@ export default function BadgeStep({ formData, inviteId }) {
       </div>
 
       
-       <a href={typeof window !== 'undefined' ? window.location.href : '#'}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="w-full flex items-center justify-center gap-2 text-sm text-indigo-400 hover:text-indigo-300 py-2"
-      >
-        <ExternalLink className="w-3.5 h-3.5" />
-        Having trouble saving? Open in browser
-      </a>
+      <p className="text-slate-400 text-xs text-center mt-2">
+  Can't save the image? Tap the <strong>⋮ menu</strong> at the top of this screen and choose
+  <strong> "Open in Chrome"</strong> (or Safari) to save your badge.
+</p>
 
       <p className="text-slate-500 text-xs mt-4">Show this QR code at the event entrance.</p>
     </div>
