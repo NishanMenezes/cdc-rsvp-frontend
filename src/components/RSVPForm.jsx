@@ -3,9 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Loader2, AlertTriangle, Lock, BadgeCheck, Clock } from 'lucide-react';
 import ConfirmStep from './rsvp/ConfirmStep';
 import OtpStep from './rsvp/OtpStep';
-import PersonalDetailsStep from './rsvp/PersonalDetailsStep';
-import ProfessionalDetailsStep from './rsvp/ProfessionalDetailsStep';
-import ReviewStep from './rsvp/ReviewStep';
+import DetailsSummaryStep from './rsvp/DetailsSummaryStep';
 import BadgeStep from './rsvp/BadgeStep';
 
 import { API_BASE } from '../config';
@@ -19,14 +17,13 @@ export default function RSVPForm() {
   const [deadlinePassed, setDeadlinePassed] = useState(false);
   const [deadline, setDeadline] = useState(null);
 
-  const [step, setStep] = useState('confirm'); // confirm | otp | personal | professional | review | badge | declined | pending
+  const [step, setStep] = useState('confirm'); // confirm | otp | summary | badge | declined
   const [stepLoading, setStepLoading] = useState(false);
   const [stepError, setStepError] = useState('');
 
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', email: '', mobile: '', company: '', designation: '',
   });
-  const [originalData, setOriginalData] = useState(null);
 
   const fetchAttendee = useCallback(async () => {
     setLoading(true);
@@ -46,20 +43,17 @@ export default function RSVPForm() {
       setDeadline(json.deadline);
 
       const [firstName, ...rest] = json.data.name.split(' ');
-      const prefilled = {
+      setFormData({
         firstName: firstName || '',
         lastName: rest.join(' ') || '',
         email: json.data.email,
         mobile: json.data.mobile,
         company: json.data.company,
         designation: json.data.designation,
-      };
-      setFormData(prefilled);
-      setOriginalData(prefilled);
+      });
 
       if (json.data.status === 'Confirmed') setStep('badge');
       if (json.data.status === 'Declined') setStep('declined');
-      if (json.data.status === 'Pending Verification') setStep('pending');
     } catch (err) {
       setLoadError('Network error. Please check your connection and try again.');
     } finally {
@@ -68,10 +62,6 @@ export default function RSVPForm() {
   }, [inviteId]);
 
   useEffect(() => { fetchAttendee(); }, [fetchAttendee]);
-
-  const handleChange = (field) => (e) => {
-    setFormData((prev) => ({ ...prev, [field]: e.target.value }));
-  };
 
   const handleConfirm = async () => {
     setStepLoading(true);
@@ -127,7 +117,7 @@ export default function RSVPForm() {
         setStepError(json.message || 'Incorrect OTP.');
         return;
       }
-      setStep('personal');
+      setStep('summary');
     } catch (err) {
       setStepError('Network error. Please try again.');
     } finally {
@@ -144,22 +134,16 @@ export default function RSVPForm() {
     }
   };
 
-  const handleFinalSubmit = async () => {
+  const handleFinalConfirm = async () => {
     setStepLoading(true);
     setStepError('');
-
-    const hasChanges = originalData && (
-      formData.company !== originalData.company ||
-      formData.designation !== originalData.designation
-    );
-
     try {
       const res = await fetch(`${API_BASE}/rsvp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           inviteId,
-          mode: hasChanges ? 'update' : 'confirm',
+          mode: 'confirm',
           name: `${formData.firstName} ${formData.lastName}`,
           email: formData.email,
           mobile: formData.mobile,
@@ -172,7 +156,7 @@ export default function RSVPForm() {
         setStepError(json.message || 'Submission failed.');
         return;
       }
-      setStep(hasChanges ? 'pending' : 'badge');
+      setStep('badge');
     } catch (err) {
       setStepError('Network error. Please try again.');
     } finally {
@@ -240,17 +224,6 @@ export default function RSVPForm() {
             </div>
           )}
 
-          {step === 'pending' && (
-            <div className="text-center py-6">
-              <Clock className="w-12 h-12 text-amber-400 mx-auto mb-4" />
-              <h2 className="text-lg font-semibold mb-2">Submitted for Review</h2>
-              <p className="text-slate-400">
-                Since you updated your company or designation details, our team will verify this
-                before your badge is issued. You'll be notified once it's confirmed.
-              </p>
-            </div>
-          )}
-
           {step === 'confirm' && (
             <ConfirmStep attendee={attendee} onConfirm={handleConfirm} onDecline={handleDecline} loading={stepLoading} />
           )}
@@ -259,16 +232,8 @@ export default function RSVPForm() {
             <OtpStep mobile={attendee.mobile} onVerify={handleVerifyOtp} onResend={handleResendOtp} loading={stepLoading} error={stepError} />
           )}
 
-          {step === 'personal' && (
-            <PersonalDetailsStep formData={formData} onChange={handleChange} onNext={() => setStep('professional')} />
-          )}
-
-          {step === 'professional' && (
-            <ProfessionalDetailsStep formData={formData} onChange={handleChange} onNext={() => setStep('review')} onBack={() => setStep('personal')} />
-          )}
-
-          {step === 'review' && (
-            <ReviewStep formData={formData} onSubmit={handleFinalSubmit} onBack={() => setStep('professional')} loading={stepLoading} />
+          {step === 'summary' && (
+            <DetailsSummaryStep formData={formData} onConfirm={handleFinalConfirm} loading={stepLoading} />
           )}
 
           {step === 'badge' && (

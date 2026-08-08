@@ -3,13 +3,13 @@ import { User, Mail, Phone } from 'lucide-react';
 export default function PersonalDetailsStep({ formData, onChange, onNext }) {
   return (
     <div>
-      <h2 className="text-lg font-semibold mb-1">Personal Details</h2>
-      <p className="text-slate-400 text-sm mb-6">Please review your information.</p>
+      <h2 className="text-lg font-seibold mb-1">Personal Details</h2>
+      <p className="text-slate-400 text-sm mb-6">Please review and update your information.</p>
 
       <div className="space-y-4">
-        <Field icon={User} label="First Name" value={formData.firstName} readOnly />
-        <Field icon={User} label="Last Name" value={formData.lastName} readOnly />
-        <Field icon={Mail} label="Email Address" type="email" value={formData.email} readOnly />
+        <Field icon={User} label="First Name" value={formData.firstName} onChange={onChange('firstName')} />
+        <Field icon={User} label="Last Name" value={formData.lastName} onChange={onChange('lastName')} />
+        <Field icon={Mail} label="Email Address" type="email" value={formData.email} onChange={onChange('email')} />
         <Field icon={Phone} label="Mobile Number" value={formData.mobile} readOnly />
       </div>
 
@@ -23,7 +23,7 @@ export default function PersonalDetailsStep({ formData, onChange, onNext }) {
   );
 }
 
-function Field({ icon: Icon, label, value, readOnly, type = 'text' }) {
+function Field({ icon: Icon, label, value, onChange, readOnly, type = 'text' }) {
   return (
     <div>
       <label className="block text-sm font-medium text-slate-400 mb-1.5">{label}</label>
@@ -32,9 +32,9 @@ function Field({ icon: Icon, label, value, readOnly, type = 'text' }) {
         <input
           type={type}
           value={value}
+          onChange={onChange}
           readOnly={readOnly}
-          tabIndex={readOnly ? -1 : 0}
-          className="w-full bg-transparent outline-none text-slate-100 cursor-default"
+          className="w-full bg-transparent outline-none text-slate-100 disabled:text-slate-500"
         />
       </div>
     </div>
